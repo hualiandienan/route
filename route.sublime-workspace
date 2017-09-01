@@ -4,6 +4,22 @@
 		"selected_items":
 		[
 			[
+				"regi",
+				"registerRoutes"
+			],
+			[
+				"reg",
+				"registerRoutes"
+			],
+			[
+				"han",
+				"handleHashchange"
+			],
+			[
+				"hist",
+				"historySupport〔variable〕"
+			],
+			[
 				"ap",
 				"appSrc"
 			],
@@ -15,6 +31,24 @@
 	},
 	"buffers":
 	[
+		{
+			"file": "demo.html",
+			"settings":
+			{
+				"buffer_size": 183,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/browser.js",
+			"settings":
+			{
+				"buffer_size": 1376,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		}
 	],
 	"build_system": "",
 	"build_system_choices":
@@ -54,10 +88,12 @@
 	},
 	"expanded_folders":
 	[
-		"/D/web_front/route"
+		"/D/web_front/route",
+		"/D/web_front/route/src"
 	],
 	"file_history":
 	[
+		"/D/web_front/route/src/route.js",
 		"/D/web_front/route/route.js",
 		"/D/web_front/web_games/.git/config",
 		"/D/web_front/web_games/src/route/route.js",
@@ -83,7 +119,7 @@
 	],
 	"find":
 	{
-		"height": 28.0
+		"height": 56.0
 	},
 	"find_in_files":
 	{
@@ -97,6 +133,8 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"{\n",
+			"\t\n",
 			"stats",
 			"hmr",
 			";",
@@ -119,8 +157,69 @@
 	"groups":
 	[
 		{
+			"selected": 1,
 			"sheets":
 			[
+				{
+					"buffer": 0,
+					"file": "demo.html",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 183,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								136,
+								136
+							]
+						],
+						"settings":
+						{
+							"auto_complete": false,
+							"open_with_edit": true,
+							"syntax": "Packages/HTML/HTML.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "src/browser.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1376,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								93,
+								93
+							]
+						],
+						"settings":
+						{
+							"auto_complete": false,
+							"open_with_edit": true,
+							"syntax": "Packages/JavaScript/JavaScript.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 120.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				}
 			]
 		}
 	],
