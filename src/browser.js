@@ -1,22 +1,25 @@
 // some utils
-var isObject(obj) {
+function isObject(obj) {
 
 }
 
+function getParamsUrl() {
+	var hash = location.hash;
+	return {
 
-function createRouter(userConfig) {
+	}
+}
+
+const pathReg = /^\/[-A-Za-z0-9]$/;
+
+function createRouter(registerRoutes) {
 	const routes = {};
 	const listeners = [];
 
-	// get config
-	var config = Object.assign({}, {
-		html5mode: true,
-		routes: {}
-
-	}, userConfig);
-
-	const historySupport = !!(window.history && window.history.pushState);
-	var needHashbang = !historySupport || !config.html5mode;
+	const globalConfig = {
+		html5mode: true
+	};
+	var needHashbang = false;
 
 	// register dom listener
 	var domListenerCount = 0;
@@ -38,35 +41,49 @@ function createRouter(userConfig) {
 		}
 	};
 
-	var configure = function(options) {
+	// config router
+	var configure = function(options = {}) {
+		Object.assign(globalConfig, options);
 
+		const historySupport = !!(window.history && window.history.pushState);
+		needHashbang = !historySupport || !config.html5mode;
+
+		// 未定义好配置接口
 	};
 
+	// add custom event listener
 	var on = function(type) {
 
 	};
 
-	var setRoute = function(route) {
+	// register route
+	var setRoute = function(path = "", route = {}) {
 		if (!isObject(route)) {
-			throw new Error("route is object");
+			throw new Error("route should be object");
+		}
+		if (typeof path !== "string" && pathReg.test(path)) {
+			throw new Error("invalid path");
 		}
 
-
+		// 接口检查
+		// push进routes
 	}
 
 	// register routes
-	const registerRoutes = config.routes;
-	if (registerRoutes && isObject(registerRoutes)) {
-		for (var path in registerRoutes) {
-			if (registerRoutes.hasOwnProperty(path)) {
-				setRoute(registerRoutes.path);
+	var setRoutes = function(routes = {}) {
+		if (routes && isObject(routes)) {
+			for (var path in routes) {
+				if (routes.hasOwnProperty(path)) {
+					setRoute(path, routes[path]);
+				}
 			}
 		}
-	}
-
+	};
+	
 	return {
 		on: on,
-		route: setRoute
+		route: setRoute,
+		config: configure
 	};
 }
 
