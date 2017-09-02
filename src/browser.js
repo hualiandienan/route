@@ -4,10 +4,16 @@ function isObject(obj) {
 }
 
 function getParamsUrl() {
-	var hash = location.hash;
-	return {
+	const hash = location.hash.split("?");
+	var hashName = hash[0].slice(1);
 
-	}
+	var query = hash[1].split("&").reduce((obj, item) => {
+		var itemDetail = item.split("=");
+	}, {});
+
+	return {
+		hash: hashName
+	};
 }
 
 const pathReg = /^\/[-A-Za-z0-9]$/;
@@ -66,7 +72,14 @@ function createRouter(registerRoutes) {
 		}
 
 		// 接口检查
-		// push进routes
+		// 检查path是否已注册，若没有则push进routes
+		if (!(path in routes)) {
+			routes[path] = {
+				template: route.template || "",
+				jsFiles: route.js || [],
+				resolve: route.resolve
+			};
+		}
 	}
 
 	// register routes
