@@ -34,7 +34,7 @@ function isObject(obj) {
 
 function getParamsUrl(urlHash) {
     const hash = urlHash.split("?");
-    var hashName = hash[0].slice(1);
+    var hashName = hash[0];
 
     var query = decodeURIComponent(hash[1]).split("&").reduce((obj, item) => {
         var itemDetail = item.split("=");
@@ -51,13 +51,15 @@ const pathReg = /^\/[-A-Za-z0-9]+$/;
 const templateUrlReg = /^(\/)?[-A-Za-z0-9](\/[-A-Za-z0-9])*\.html$/;
 
 function createRouter(registerRoutes) {
+    // private variables
     const routes = {};
     const listeners = [];
 
-    const globalConfig = {
+    const _globalConfig = {
         html5mode: true
     };
-    var needHashbang = false;
+    var _needHashbang = false;
+    var _defaultPath = "";
 
     // register dom listener
     var domListenerCount = 0;
@@ -65,13 +67,13 @@ function createRouter(registerRoutes) {
         domListenerCount += detal;
 
         if (domListenerCount === 1) {
-            if (needHashbang) {
+            if (_needHashbang) {
                 window.addEventListener("hashchange", handleHashchange);
             } else {
                 window.addEventListener("popstate", handlePopstate);
             }
         } else if (domListenerCount === 0) {
-            if (needHashbang) {
+            if (_needHashbang) {
                 window.removeEventListener("hashchange", handleHashchange);
             } else {
                 window.removeEventListener("popstate", handlePopstate);
@@ -80,8 +82,26 @@ function createRouter(registerRoutes) {
     };
 
     var handleHashchange = function(ev) {
-        const newUrl = ev && ev.newURL || location;
+        var newUrl = ev && ev.newURL || location.hash;
+        newUrl = newUrl.replace(/.*#/, "");
 
+        let { hash } = getParamsUrl(newUrl);
+
+        if (hash in routes) {
+            let hashRoute = routes[hash];
+            if (hashRoute.template) {
+                getTemplate(hash.template).then((data) => {
+                    hashRoute.resolve(data);
+                }, () => {
+                    throw new Error("can't get template");
+                });
+            }
+        } else if (_defaultPath && _defaultPath in routes) {
+            // 将路径更改到默认路径
+            locatin.hash = "#/" + _defaultPath;
+        } else {
+            throw new Error("error default path.");
+        }
     };
 
     var handlePopstate = function(ev) {
@@ -90,10 +110,10 @@ function createRouter(registerRoutes) {
 
     // config router
     var configure = function(options = {}) {
-        Object.assign(globalConfig, options);
+        Object.assign(_globalConfig, options);
 
         const historySupport = !!(window.history && window.history.pushState);
-        needHashbang = !historySupport || !config.html5mode;
+        _needHashbang = !historySupport || !config.html5mode;
 
         // 未定义好配置接口
     };
@@ -144,10 +164,18 @@ function createRouter(registerRoutes) {
             }
         }
     };
+
+    var otherwise = function(path) {
+        if (typeof path === "string" && pathReg.test(path)) {
+            _defaultPath = path;
+        }
+        return this;
+    };
     
     return {
-        on: on,
-        route: setRoute,
+        on,
+        when: setRoute,
+        otherwise,
         config: configure
     };
 }

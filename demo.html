@@ -6,9 +6,15 @@
 <body>
 	<div>
 		<ul>
-			<li><a href="#home"></a></li>
-			<li><a href="#user"></a></li>
+			<li><a href="#/home">home</a></li>
+			<li><a href="#/user">user</a></li>
 		</ul>
 	</div>
 </body>
+<script src="https://google.github.io/traceur-compiler/bin/traceur.js"></script>
+<script src="https://google.github.io/traceur-compiler/bin/BrowserSystem.js"></script>
+<script src="https://google.github.io/traceur-compiler/src/bootstrap.js"></script>
+<script type="module">
+	import createRouter from "./src/browser.js";
+</script>
 </html>
