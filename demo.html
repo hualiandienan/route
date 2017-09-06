@@ -5,10 +5,13 @@
 </head>
 <body>
 	<div>
-		<ul>
-			<li><a href="#/home">home</a></li>
-			<li><a href="#/user">user</a></li>
+		<ul id="nav">
+			<li><a data-route="/home">home</a></li>
+			<li><a data-route="/user">user</a></li>
 		</ul>
+	</div>
+	<div>
+		<div id="view"></div>
 	</div>
 </body>
 <script src="https://google.github.io/traceur-compiler/bin/traceur.js"></script>
@@ -16,5 +19,28 @@
 <script src="https://google.github.io/traceur-compiler/src/bootstrap.js"></script>
 <script type="module">
 	import createRouter from "./src/browser.js";
+
+	console.log(1);
+	var view = document.getElementById("view");
+	var router = createRouter({
+		"/home": {
+			resolve: function() {
+				view.innerHTML = "";
+			}
+		},
+		"/user": {
+			template: "/user.html",
+			resolve: function(template) {
+				view.innerHTML = template;
+			}
+		}
+	}).config({
+		html5mode: true
+	});
+
+	document.getElementById("nav").onclick = function(ev) {
+		var target = ev.target || ev.srcElement;
+		router.routeTo(target.getAttribute("data-route"));
+	}
 </script>
 </html>

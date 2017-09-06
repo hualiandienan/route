@@ -25,8 +25,7 @@ function getTemplate(url) {
 }
 
 function isObject(obj) {
-    if (typeof obj === "object" && !!obj &&
-            Object.prototype.toString.call(obj) === "[object object]") {
+    if (!!obj && Object.prototype.toString.call(obj).toLowerCase() === "[object object]") {
         return true;
     }
     return false;
@@ -42,7 +41,7 @@ function getParamsUrl(urlHash) {
     }, {});
 
     return {
-        hash: hashName
+        hash: hashName,
         query: query
     };
 }
@@ -87,46 +86,86 @@ function createRouter(registerRoutes) {
 
         let { hash } = getParamsUrl(newUrl);
 
+        handleChange(hash);
+    };
+
+    var handlePopstate = function(ev) {
+        var path = getPath();
+        handleChange(path);
+    };
+
+    var handleChange = function(hash) {
         if (hash in routes) {
             let hashRoute = routes[hash];
             if (hashRoute.template) {
-                getTemplate(hash.template).then((data) => {
+                getTemplate(hashRoute.template).then((data) => {
                     hashRoute.resolve(data);
                 }, () => {
                     throw new Error("can't get template");
                 });
+            } else {
+                hashRoute.resolve();
             }
         } else if (_defaultPath && _defaultPath in routes) {
             // 将路径更改到默认路径
-            locatin.hash = "#/" + _defaultPath;
+            if (_needHashbang) {
+                locatin.hash = "#/" + _defaultPath;
+            } else {
+                window.history.replaceState({}, null, _defaultPath);
+            }
         } else {
             throw new Error("error default path.");
         }
+    }
+
+    var setPath = function(path) {
+        if (!_needHashbang) {
+            window.history.pushState({}, null, path);
+            handlePopstate();
+        } else {
+            location.hash = path;
+        }
+    };
+    var getPath = function() {
+        var path = location.pathname;
+        if (path.charAt(0) !== "/") {
+            return "/" + path;
+        }
+        return path;
+    }
+
+    // register routes
+    var setRoutes = function(routes = {}) {
+        if (routes && isObject(routes)) {
+            for (var path in routes) {
+                if (routes.hasOwnProperty(path)) {
+                    setRoute(path, routes[path]);
+                }
+            }
+        }
     };
 
-    var handlePopstate = function(ev) {
-
-    };
-
+    // api
     // config router
     var configure = function(options = {}) {
         Object.assign(_globalConfig, options);
 
+        checkDomListener(-1);
+
         const historySupport = !!(window.history && window.history.pushState);
-        _needHashbang = !historySupport || !config.html5mode;
+        _needHashbang = !historySupport || !_globalConfig.html5mode;
 
         // 未定义好配置接口
-    };
 
-    // add custom event listener
-    var on = function(type) {
+        checkDomListener(1);
 
+        return this;
     };
 
     // register route
     var setRoute = function(path = "", route = {}) {
-        if (!isObject(route) || typeof route !== "function") {
-            throw new Error("route should be object");
+        if (!isObject(route) && typeof route !== "function") {
+            throw new Error("route should be object or function");
         }
         if (typeof path !== "string" && pathReg.test(path)) {
             throw new Error("invalid path");
@@ -152,31 +191,47 @@ function createRouter(registerRoutes) {
                 resolve
             };
         }
+
+        return this;
     }
 
-    // register routes
-    var setRoutes = function(routes = {}) {
-        if (routes && isObject(routes)) {
-            for (var path in routes) {
-                if (routes.hasOwnProperty(path)) {
-                    setRoute(path, routes[path]);
-                }
-            }
-        }
-    };
-
+    // set default route
     var otherwise = function(path) {
         if (typeof path === "string" && pathReg.test(path)) {
             _defaultPath = path;
         }
         return this;
     };
+
+    // add custom event listener
+    var on = function(type) {
+
+    };
+
+    // for html5
+    var routeTo = function(path) {
+        let url = getPath().split("/");
+
+        if (typeof path === "string") {
+            if (path.charAt(0) === "/") {
+                path = path.slice(1);
+            }
+            url[url.length - 1] = path;
+        }
+
+        setPath(url.join("/"));
+    };
+
+    // boot
+    checkDomListener(1);
+    setRoutes(registerRoutes);
     
     return {
         on,
         when: setRoute,
         otherwise,
-        config: configure
+        config: configure,
+        routeTo
     };
 }
 
