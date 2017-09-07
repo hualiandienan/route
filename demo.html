@@ -20,7 +20,6 @@
 <script type="module">
 	import createRouter from "./src/browser.js";
 
-	console.log(1);
 	var view = document.getElementById("view");
 	var router = createRouter({
 		"/home": {
@@ -35,7 +34,7 @@
 			}
 		}
 	}).config({
-		html5mode: true
+		html5mode: false
 	});
 
 	document.getElementById("nav").onclick = function(ev) {

@@ -60,6 +60,8 @@ function createRouter(registerRoutes) {
     var _needHashbang = false;
     var _defaultPath = "";
 
+    var _runStart = false;
+
     // register dom listener
     var domListenerCount = 0;
     var checkDomListener = function(detal) {
@@ -148,16 +150,18 @@ function createRouter(registerRoutes) {
     // api
     // config router
     var configure = function(options = {}) {
-        Object.assign(_globalConfig, options);
+        if (!_runStart) {
+            Object.assign(_globalConfig, options);
 
-        checkDomListener(-1);
+            // checkDomListener(-1);
 
-        const historySupport = !!(window.history && window.history.pushState);
-        _needHashbang = !historySupport || !_globalConfig.html5mode;
+            const historySupport = !!(window.history && window.history.pushState);
+            _needHashbang = !historySupport || !_globalConfig.html5mode;
 
-        // 未定义好配置接口
+            // 未定义好配置接口
 
-        checkDomListener(1);
+            // checkDomListener(1);
+        }
 
         return this;
     };
@@ -210,7 +214,13 @@ function createRouter(registerRoutes) {
 
     // for html5
     var routeTo = function(path) {
-        let url = getPath().split("/");
+        let url;
+
+        if (_needHashbang) {
+            url = document.hash ? document.hash.slice(1).split("/") : ["", ""];
+        } else {
+            url = getPath().split("/");
+        }
 
         if (typeof path === "string") {
             if (path.charAt(0) === "/") {
@@ -222,8 +232,22 @@ function createRouter(registerRoutes) {
         setPath(url.join("/"));
     };
 
+    var run = function() {
+        if (!_runStart) {
+            checkDomListener(1);
+
+            if (_needHashbang) {
+                
+            } else {
+                
+            }
+        }
+        _runStart = true;
+
+        return this;
+    };
+
     // boot
-    checkDomListener(1);
     setRoutes(registerRoutes);
     
     return {
@@ -231,7 +255,8 @@ function createRouter(registerRoutes) {
         when: setRoute,
         otherwise,
         config: configure,
-        routeTo
+        routeTo,
+        run
     };
 }
 
