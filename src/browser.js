@@ -24,6 +24,28 @@ function getTemplate(url) {
     return htmlPromise;
 }
 
+function getScript(urls = []) {
+    if (urls.length) {
+        let head = document.getElementsByTagName("head")[0];
+        let scriptPromises = [];
+        scriptPromises = urls.map(url => {
+            return new Promise(function(resolve, reject) {
+                var scriptEle = document.createElement("script");
+                scriptEle.type = "text/javascript";
+                scriptEle.src = url;
+                scriptEle.async = "async";
+                scriptEle.onload = function(){
+                    resolve();
+                };
+                head.appendChild(scriptEle);
+            });
+        });
+
+        return Promise.all(scriptPromises);
+    }
+    return Promise.resolve();
+}
+
 function isObject(obj) {
     if (!!obj && Object.prototype.toString.call(obj).toLowerCase() === "[object object]") {
         return true;
@@ -52,7 +74,11 @@ const templateUrlReg = /^(\/)?[-A-Za-z0-9](\/[-A-Za-z0-9])*\.html$/;
 function createRouter(registerRoutes) {
     // private variables
     const routes = {};
-    const listeners = [];
+    const listeners = {
+        "loadStart": [],
+        "loadSucceed": [],
+        "loadFailed": []
+    };
 
     const _globalConfig = {
         html5mode: true
@@ -98,35 +124,53 @@ function createRouter(registerRoutes) {
 
     var handleChange = function(hash) {
         if (hash in routes) {
+            broadcast("loadStart", hash);
             let hashRoute = routes[hash];
             if (hashRoute.template) {
-                getTemplate(hashRoute.template).then((data) => {
-                    hashRoute.resolve(data);
-                }, () => {
-                    throw new Error("can't get template");
-                });
+                if (hashRoute.templateCache) {
+                    broadcast("loadSucceed", hash);
+                    hashRoute.resolve(hashRoute.templateCache);
+                } else {
+                    getTemplate(hashRoute.template).then((data) => {
+                        hashRoute.templateCache = data;
+                        broadcast("loadSucceed", hash);
+                        hashRoute.resolve(data);
+                    }, () => {
+                        broadcast("loadFailed", hash);
+                        // throw new Error("can't get template");
+                    });
+                }
             } else {
+                broadcast("loadSucceed", hash);
                 hashRoute.resolve();
             }
-        } else if (_defaultPath && _defaultPath in routes) {
-            // 将路径更改到默认路径
-            if (_needHashbang) {
-                locatin.hash = "#/" + _defaultPath;
-            } else {
-                window.history.replaceState({}, null, _defaultPath);
+
+            if (hashRoute.jsFiles && !hashRoute.jsFlag) {
+                getScript(hashRoute.jsFiles).then(() => {
+                    hashRoute.jsFlag = true;
+                });
             }
-        } else {
-            throw new Error("error default path.");
+        } else if (_defaultPath) {
+            if (_defaultPath in routes) {
+                // 将路径更改到默认路径
+                if (_needHashbang) {
+                    location.hash = "#" + _defaultPath;
+                } else {
+                    window.history.replaceState({}, null, _defaultPath);
+                }
+            } else {
+                throw new Error("error default path.");
+            }
         }
     }
 
     var setPath = function(path) {
         if (!_needHashbang) {
             window.history.pushState({}, null, path);
-            handlePopstate();
         } else {
             location.hash = path;
         }
+        handleChange(path);
     };
     var getPath = function() {
         var path = location.pathname;
@@ -144,6 +188,16 @@ function createRouter(registerRoutes) {
                     setRoute(path, routes[path]);
                 }
             }
+        }
+    };
+
+    var broadcast = function(eventType, path) {
+        if (eventType in listeners) {
+            listeners[eventType].forEach(fn => {
+                if (typeof fn === "function") {
+                    fn.call(router, path);
+                }
+            });
         }
     };
 
@@ -182,7 +236,11 @@ function createRouter(registerRoutes) {
                 templateUrlReg.test(template)) {
             throw new Error("invalid template url");
         }
-        // 未确认是否将js作为接口，先不进行非法检测
+        
+        if (template && !Array.isArray(jsFiles)) {
+            throw new Error("js atrributs should be js files array");
+        }
+
         if (resolve && typeof resolve !== "function") {
             throw new Error("resolve should be function");
         }
@@ -192,7 +250,9 @@ function createRouter(registerRoutes) {
             routes[path] = {
                 template,
                 jsFiles,
-                resolve
+                resolve,
+                jsFlag: false,
+                templateCache: ""
             };
         }
 
@@ -208,8 +268,16 @@ function createRouter(registerRoutes) {
     };
 
     // add custom event listener
-    var on = function(type) {
+    var on = function(type, callback) {
+        if (type in listeners) {
+            if (typeof callback === "function") {
+                listeners[type].push(callback);
+            } else {
+                throw new Error("event callback should be a function");
+            }
+        }
 
+        return this;
     };
 
     // for html5
@@ -234,13 +302,14 @@ function createRouter(registerRoutes) {
 
     var run = function() {
         if (!_runStart) {
-            checkDomListener(1);
-
+            let path;
             if (_needHashbang) {
-                
+                handleHashchange();
             } else {
-                
+                handlePopstate
             }
+
+            checkDomListener(1);
         }
         _runStart = true;
 
@@ -249,8 +318,8 @@ function createRouter(registerRoutes) {
 
     // boot
     setRoutes(registerRoutes);
-    
-    return {
+
+    let router = {
         on,
         when: setRoute,
         otherwise,
@@ -258,6 +327,8 @@ function createRouter(registerRoutes) {
         routeTo,
         run
     };
+    
+    return router;
 }
 
 export default createRouter;

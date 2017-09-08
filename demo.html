@@ -6,8 +6,8 @@
 <body>
 	<div>
 		<ul id="nav">
-			<li><a data-route="/home">home</a></li>
-			<li><a data-route="/user">user</a></li>
+			<li><a href="#/home">home</a></li>
+			<li><a href="#/user">user</a></li>
 		</ul>
 	</div>
 	<div>
@@ -23,6 +23,7 @@
 	var view = document.getElementById("view");
 	var router = createRouter({
 		"/home": {
+			js: ["./demo.js"],
 			resolve: function() {
 				view.innerHTML = "";
 			}
@@ -33,13 +34,19 @@
 				view.innerHTML = template;
 			}
 		}
-	}).config({
+	})
+	.config({
 		html5mode: false
-	});
+	})
+	.otherwise("/home")
+	.on("loadSucceed", (route) => {
+		console.log(route);
+	})
+	.run();
 
-	document.getElementById("nav").onclick = function(ev) {
-		var target = ev.target || ev.srcElement;
-		router.routeTo(target.getAttribute("data-route"));
-	}
+	// document.getElementById("nav").onclick = function(ev) {
+	// 	var target = ev.target || ev.srcElement;
+	// 	router.routeTo(target.getAttribute("data-route"));
+	// }
 </script>
 </html>
