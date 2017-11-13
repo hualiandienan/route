@@ -22,11 +22,8 @@
 
 	var view = document.getElementById("view");
 	var router = createRouter({
-		"/home": {
-			js: ["./demo.js"],
-			resolve: function() {
-				view.innerHTML = "";
-			}
+		"/home": function(data) {
+			console.log(data);
 		},
 		"/user": {
 			template: "/user.html",

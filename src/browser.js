@@ -60,6 +60,8 @@ function getParamsUrl(urlHash) {
     var query = decodeURIComponent(hash[1]).split("&").reduce((obj, item) => {
         var itemDetail = item.split("=");
         obj[itemDetail[0]] = itemDetail[1];
+
+        return obj;
     }, {});
 
     return {
@@ -88,38 +90,22 @@ function createRouter(registerRoutes) {
 
     var _runStart = false;
 
-    // register dom listener
-    var domListenerCount = 0;
-    var checkDomListener = function(detal) {
-        domListenerCount += detal;
-
-        if (domListenerCount === 1) {
-            if (_needHashbang) {
-                window.addEventListener("hashchange", handleHashchange);
-            } else {
-                window.addEventListener("popstate", handlePopstate);
-            }
-        } else if (domListenerCount === 0) {
-            if (_needHashbang) {
-                window.removeEventListener("hashchange", handleHashchange);
-            } else {
-                window.removeEventListener("popstate", handlePopstate);
-            }
+    var getPath = function() {
+        var path = location.pathname;
+        if (path.charAt(0) !== "/") {
+            return "/" + path;
         }
-    };
+        return path;
+    }
 
-    var handleHashchange = function(ev) {
-        var newUrl = ev && ev.newURL || location.hash;
-        newUrl = newUrl.replace(/.*#/, "");
-
-        let { hash } = getParamsUrl(newUrl);
-
-        handleChange(hash);
-    };
-
-    var handlePopstate = function(ev) {
-        var path = getPath();
-        handleChange(path);
+    var broadcast = function(eventType, path) {
+        if (eventType in listeners) {
+            listeners[eventType].forEach(fn => {
+                if (typeof fn === "function") {
+                    fn.call(router, path);
+                }
+            });
+        }
     };
 
     var handleChange = function(hash) {
@@ -164,6 +150,40 @@ function createRouter(registerRoutes) {
         }
     }
 
+    var handleHashchange = function(ev) {
+        var newUrl = (ev && ev.newURL) || location.hash;
+        newUrl = newUrl.replace(/.*#/, "");
+
+        let { hash } = getParamsUrl(newUrl);
+
+        handleChange(hash);
+    };
+
+    var handlePopstate = function(ev) {
+        var path = getPath();
+        handleChange(path);
+    };
+
+    // register dom listener
+    var domListenerCount = 0;
+    var checkDomListener = function(detal) {
+        domListenerCount = domListenerCount + detal;
+
+        if (domListenerCount === 1) {
+            if (_needHashbang) {
+                window.addEventListener("hashchange", handleHashchange);
+            } else {
+                window.addEventListener("popstate", handlePopstate);
+            }
+        } else if (domListenerCount === 0) {
+            if (_needHashbang) {
+                window.removeEventListener("hashchange", handleHashchange);
+            } else {
+                window.removeEventListener("popstate", handlePopstate);
+            }
+        }
+    };
+
     var setPath = function(path) {
         if (!_needHashbang) {
             window.history.pushState({}, null, path);
@@ -172,34 +192,7 @@ function createRouter(registerRoutes) {
         }
         handleChange(path);
     };
-    var getPath = function() {
-        var path = location.pathname;
-        if (path.charAt(0) !== "/") {
-            return "/" + path;
-        }
-        return path;
-    }
 
-    // register routes
-    var setRoutes = function(routes = {}) {
-        if (routes && isObject(routes)) {
-            for (var path in routes) {
-                if (routes.hasOwnProperty(path)) {
-                    setRoute(path, routes[path]);
-                }
-            }
-        }
-    };
-
-    var broadcast = function(eventType, path) {
-        if (eventType in listeners) {
-            listeners[eventType].forEach(fn => {
-                if (typeof fn === "function") {
-                    fn.call(router, path);
-                }
-            });
-        }
-    };
 
     // api
     // config router
@@ -229,20 +222,25 @@ function createRouter(registerRoutes) {
             throw new Error("invalid path");
         }
 
-        // 接口检查
-        let { template = "", js: jsFiles = [], resolve } = route;
-        if (template && 
-                typeof template === "string" && 
-                templateUrlReg.test(template)) {
-            throw new Error("invalid template url");
-        }
-        
-        if (template && !Array.isArray(jsFiles)) {
-            throw new Error("js atrributs should be js files array");
-        }
+        var { template, js: jsFiles = [], resolve } = route;;
+        if (typeof route === "function") {
+            resolve = route;
+        } else {
 
-        if (resolve && typeof resolve !== "function") {
-            throw new Error("resolve should be function");
+            // 接口检查
+            if (template && 
+                    typeof template === "string" && 
+                    templateUrlReg.test(template)) {
+                throw new Error("invalid template url");
+            }
+            
+            if (template && !Array.isArray(jsFiles)) {
+                throw new Error("js atrributs should be js files array");
+            }
+
+            if (resolve && typeof resolve !== "function") {
+                throw new Error("resolve should be function");
+            }
         }
 
         // 检查path是否已注册，若没有则push进routes
@@ -302,11 +300,10 @@ function createRouter(registerRoutes) {
 
     var run = function() {
         if (!_runStart) {
-            let path;
             if (_needHashbang) {
                 handleHashchange();
             } else {
-                handlePopstate
+                handlePopstate();
             }
 
             checkDomListener(1);
@@ -314,6 +311,17 @@ function createRouter(registerRoutes) {
         _runStart = true;
 
         return this;
+    };
+
+    // register routes
+    var setRoutes = function(routes = {}) {
+        if (routes && isObject(routes)) {
+            for (var path in routes) {
+                if (routes.hasOwnProperty(path)) {
+                    setRoute(path, routes[path]);
+                }
+            }
+        }
     };
 
     // boot
